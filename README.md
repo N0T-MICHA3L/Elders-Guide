@@ -1,4 +1,9 @@
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/09ee76d7-1dfd-4251-9f98-1d630ed0c9ff">
+</p>
+
 # 麥企兜 Elders Guide 
+
 
 ## 簡介 Introduction
 
@@ -19,3 +24,6 @@ This is an application specifically designed to assist seniors by providing simp
 - Google Account
 - Google Calendar
 - Google Map
+
+## 隱私權政策
+- 
