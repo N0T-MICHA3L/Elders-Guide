@@ -26,4 +26,4 @@ This is an application specifically designed to assist seniors by providing simp
 - Google Map
 
 ## 隱私權政策
-- 
+- https://n0t-micha3l.github.io/Elders-Guide/Privacy%20Policy.html
