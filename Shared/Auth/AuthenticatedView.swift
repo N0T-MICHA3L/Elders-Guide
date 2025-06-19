@@ -50,10 +50,43 @@ struct AuthenticatedView<Content, Unauthenticated>: View where Content: View, Un
                 .aspectRatio(contentMode: .fill)
                 .frame(minWidth: 0, maxWidth: .infinity)
                 .edgesIgnoringSafeArea(.all)
-            if viewModel.displayName.isEmpty {
-                VStack (spacing: 30){
-                
-                    Image("Logo_icon").resizable().scaledToFit().frame(width:250)
+            if (viewModel.cal_ids.isEmpty) {
+                VStack (spacing: 10){
+
+                    VStack (spacing: 0){
+                        Image("mtitle2")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(height: 120)
+             
+                        Image("logo")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width:140)
+                        //Spacer()
+                    }
+                    if #available(iOS 17.0, *) {
+                        
+                        Image("elder_road").resizable().scaledToFit()
+//                            .overlay(
+//                            Text("本服務行程資訊整合自 Google 日曆，請以 Google 帳戶登入，並選擇檢視日曆")
+//                                .font(.system(size:14, design:.rounded))
+//                                .padding()
+//                                .background(Color(white: 1, opacity: 0.7)),
+//                            alignment: .bottom
+//                        )
+                    } else {
+                        Image("elder_road")
+                            .resizable()
+                            .scaledToFit()
+//                            .overlay(
+//                                Text("本服務行程資訊整合自 Google 日曆，請以 Google 帳戶登入，並選擇檢視日曆")
+//                                    .font(.system(size:14, design:.rounded))
+//                                    .padding()
+//                                    .background(Color(white: 1, opacity: 0.7)),
+//                                alignment: .bottom
+//                                )
+                    }
                     
                     if !viewModel.errorMessage.isEmpty {
                         VStack {
@@ -61,18 +94,29 @@ struct AuthenticatedView<Content, Unauthenticated>: View where Content: View, Un
                                 .foregroundColor(Color(UIColor.systemRed))
                         }
                     }
-                    
+                    VStack {
+                        Text("本服務行程資訊整合自 Google 日曆，請以 Google 帳戶登入，並選擇檢視日曆")
+                            .font(.system(size:14, design:.rounded))
+                            .foregroundColor(Color(UIColor.gray))
+                            .frame(width: 280).padding(.vertical,3)
+                    }
                     Button(action: signInWithGoogle) {
                         Text("Ｇoogle 帳號登入")
-                            .padding(.vertical, 8)
+                            .padding(.vertical, 12)
                             .frame(maxWidth: .infinity)
                             .background(alignment: .leading) {
                                 Image("Google")
-                                    .frame(width: 30, alignment: .center)
+                                    .frame(width: 50, alignment: .center)
                             }
                     }
                     .foregroundColor(colorScheme == .dark ? .white : .black)
                     .buttonStyle(.bordered)
+                    .cornerRadius(0)
+                    .padding(.vertical,30)
+                    Text("設計者：Michael")
+                    Text("https://github.com/N0T-MICHA3L/Elders-Reminder")
+                        .font(.system(size: 14))
+                        .frame(width:340)
                 }
                 .listStyle(.plain)
                 .padding()
@@ -81,7 +125,8 @@ struct AuthenticatedView<Content, Unauthenticated>: View where Content: View, Un
             VStack {
                 content().environmentObject(viewModel)
                 Text("登入帳號： \(viewModel.displayName)")
-                Button("檢視登入資訊") {
+                Button("日曆設定") {
+//                    viewModel.fetch_calendar_list()
                     presentingProfileScreen.toggle()
                 }
             }

@@ -1,21 +1,5 @@
 //
 // AuthenticationViewModel.swift
-// Favourites
-//
-// Created by Peter Friese on 08.07.2022
-// Copyright © 2021 Google LLC. All rights reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
 
 import Foundation
 import FirebaseCore
@@ -42,13 +26,15 @@ class AuthenticationViewModel: ObservableObject {
     @Published var confirmPassword: String = ""
     
     @Published var flow: AuthenticationFlow = .login
-    
     @Published var isValid: Bool  = false
     @Published var authenticationState: AuthenticationState = .unauthenticated
     @Published var errorMessage: String = ""
     @Published var user: User?
     @Published var displayName: String = ""
-    @Published var scopes = [kGTLRAuthScopeCalendar]
+    @Published var scopes = [
+            kGTLRAuthScopeCalendarReadonly,         // https://www.googleapis.com/auth/calendar.readonly
+            kGTLRAuthScopeCalendarEventsReadonly    // https://www.googleapis.com/auth/calendar.events.readonly
+        ]
     @Published var service = GTLRCalendarService()
     @Published var evt_idx:Int = -1
     @Published var evt_title = [String]()
@@ -107,6 +93,7 @@ class AuthenticationViewModel: ObservableObject {
         email = ""
         password = ""
         confirmPassword = ""
+        displayName = ""
     }
 }
 
@@ -142,6 +129,9 @@ extension AuthenticationViewModel {
     func signOut() {
         do {
             try Auth.auth().signOut()
+            cal_names.removeAll()
+            cal_ids.removeAll()
+            cal_idx = -1
         }
         catch {
             print(error)
@@ -217,7 +207,10 @@ extension AuthenticationViewModel {
         }
     }
     
-    public func fetch_calendar_list(){
+    public func fetch_calendar_list()  {
+     
+        self.cal_ids.removeAll()
+        self.cal_names.removeAll()
         
         let query = GTLRCalendarQuery_CalendarListList.query()
         service.executeQuery(query) { (ticket, result, error) in
@@ -234,12 +227,72 @@ extension AuthenticationViewModel {
                     // Add more properties as needed
                     self.cal_ids.append(calendar.identifier ?? "")
                     self.cal_names.append(calendar.summary ?? "")
+                    self.cal_idx = 0
                 }
                 print("==========================")
             } else {
                 print("No calendars found.")
             }
         }
+    }
+    
+    public func get_tts_content() -> String{
+        if self.cal_idx != -1 && self.cal_ids.count>0{
+            
+            // title
+            var content = ""
+            if (self.evt_idx<0 || self.evt_title.count<1 || self.evt_idx>=self.evt_title.count) {
+                
+            }else{
+                content.append(self.evt_title[self.evt_idx])
+                content.append(".")
+            }
+            
+            // time
+            if(self.evt_idx<0 || self.evt_start_time.count<1  || self.evt_idx>=self.evt_start_time.count){
+                
+            }else{
+                content.append("活動時間是")
+                content.append(self.evt_start_time[self.evt_idx])
+                content.append("到" )
+                content.append(self.evt_end_time[self.evt_idx])
+                content.append(".")
+            }
+                      
+            // contact
+            if(self.evt_idx<0 || self.evt_contact.count<1 || self.evt_idx>=self.evt_contact.count){
+                
+            }else{
+                content.append( "可以聯絡")
+                content.append( self.evt_contact[self.evt_idx])
+                content.append(".")
+            }
+            
+            
+            // phone
+            if(self.evt_idx<0 || self.evt_phone.count<1 || self.evt_idx>=self.evt_phone.count){
+                
+            }else{
+                content.append("電話是：")
+                content.append(self.evt_phone[self.evt_idx])
+                content.append(".")
+            }
+            
+            // location
+            if( self.evt_idx<0 || self.evt_address.count<1 || self.evt_idx>=self.evt_address.count){
+                
+            }else{
+                content.append("地點在：" )
+                content.append(self.evt_address[self.evt_idx]  )
+                content.append(".")
+            }
+            
+            
+            return content
+        }else{
+            return "沒有行程"
+        }
+
     }
     
     public func fetch_calendar_info(){
@@ -304,44 +357,72 @@ extension AuthenticationViewModel {
             } else {
                 print("GoogleCalendarManager - listEvents - Start list \(events.count) events")
             }
-            
-            
+            self.evt_title.removeAll()
+            self.evt_address.removeAll()
+            self.evt_phone.removeAll()
+            self.evt_contact.removeAll()
+            self.evt_start_time.removeAll()
+            self.evt_end_time.removeAll()
+
             
             for event in events {
                 self.evt_idx = 0
                 //print( event )
 //                print("------------------------------------")
-                self.evt_title.append( event.summary ?? "Untitle" )
+                self.evt_title.append( event.summary ?? "未註明" )
                 self.evt_address.append( event.location?.replacing(",", with: "\n") ?? "")
-                let str_start = event.start?.dateTime!.stringValue ?? ""
-                let r = str_start.index(  str_start.startIndex , offsetBy: 11)..<str_start.index(str_start.endIndex , offsetBy: -9)
-                self.evt_start_time.append(String(str_start[r]))
                 
-                let str_end = event.end?.dateTime!.stringValue ?? ""
-                let r2 = str_end.index(  str_end.startIndex , offsetBy: 11)..<str_end.index(str_end.endIndex , offsetBy: -9)
-                self.evt_end_time.append(String(str_end[r2]))
-                
-                let items = event.descriptionProperty!.split(separator: ",")
-                var i=0
-//                print("++++++++++++ DESC ++++++++++++")
-//                print(event.descriptionProperty)
-//                print("++++++++++++ ITEM ++++++++++++")
-//                print( items)
-//                print("++++++++++++ ITEM ++++++++++++")
-                while i < items.count {
-                    let s = items[i]
-                    if s.starts(with:"聯絡人"){
-                        let idx = s.index( s.startIndex,offsetBy: 4)
-                        self.evt_contact.append(String(s[idx...]))
-                        //self.evt_contact = s.substring(from: s.startIndex)
-                    }
-                    if s.starts(with: "電話"){
-                        //self.evt_phone = s.substring(from: s.startIndex , offsetBy:3)
-                        let idx = s.index( s.startIndex,offsetBy: 3)
-                        self.evt_phone.append( String(s[idx...]) )
-                    }
-                    i = i + 1
+                if event.start==nil || event.start?.dateTime==nil {
+                    self.evt_start_time.append("00:00")
+                    self.evt_end_time.append("23:59")
+                }else{
+                    let str_start = event.start?.dateTime!.stringValue ?? ""
+                    let r = str_start.index(  str_start.startIndex , offsetBy: 11)..<str_start.index(str_start.endIndex , offsetBy: -9)
+                    self.evt_start_time.append(String(str_start[r]))
+//                    print( "start >> ",event.summary , "  >>  " , event.start ?? "none")
+//                    print( "start >>2 ",event.summary , "  >>  " ,String(str_start[r]))
+                    
+                    //print( "end >> ",event.end ?? "none")
+                    //let str_end?
+                    let str_end = event.end?.dateTime!.stringValue ?? ""
+                    let r2 = str_end.index(  str_end.startIndex , offsetBy: 11)..<str_end.index(str_end.endIndex , offsetBy: -9)
+                    self.evt_end_time.append(String(str_end[r2]))
+                    
+//                    print( "end >> ",event.summary , "  >>  " , event.end ?? "none")
+//                    print( "end >>2 ",event.summary , "  >>  " ,String(str_end[r2]))
                 }
+                if event.descriptionProperty==nil {
+                    self.evt_contact.append("無")
+                    self.evt_phone.append("無")
+                } else {
+                    let items = event.descriptionProperty!.split(separator: ",")
+                    var i=0
+//                    print("++++++++++++ DESC ++++++++++++")
+//                    print(event.descriptionProperty)
+//                    print("++++++++++++ ITEM ++++++++++++")
+//                    print( items)
+//                    print("++++++++++++ ITEM ++++++++++++")
+                    var contact = "無"
+                    var phone = "無"
+                    while i < items.count {
+                        let s = items[i]
+                        if s.starts(with:"聯絡人"){
+                            let idx = s.index( s.startIndex,offsetBy: 4)
+                            contact = String(s[idx...])
+                            //self.evt_contact = s.substring(from: s.startIndex)
+                        }
+                        if s.starts(with: "電話"){
+                            //self.evt_phone = s.substring(from: s.startIndex , offsetBy:3)
+                            let idx = s.index( s.startIndex,offsetBy: 3)
+                            phone = String(s[idx...])
+                        }
+                        i = i + 1
+                    }
+                    self.evt_contact.append(contact)
+                    self.evt_phone.append(phone)
+                }
+                
+                
                         
                 
 //                print( event.summary ?? "no summary")

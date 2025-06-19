@@ -8,9 +8,6 @@ struct UserProfileView: View {
   @Environment(\.dismiss) var dismiss
   @State var presentingConfirmationDialog = false
     
-    
-    // Your data source for the dropdown
-    //let options = ["日曆1", "日曆2", "日曆3"]
 
     // State variable to track the selected option
     @State private var selectedOption = 0
@@ -33,7 +30,9 @@ struct UserProfileView: View {
     }
 
   var body: some View {
+      
     Form {
+
       Section {
         VStack {
           HStack {
@@ -48,9 +47,7 @@ struct UserProfileView: View {
               .overlay(Circle().stroke(Color.accentColor, lineWidth: 2))
             Spacer()
           }
-//          Button(action: {}) {
-//            Text("edit")
-//          }
+
         }
       }
       .listRowBackground(Color(UIColor.systemGroupedBackground))
@@ -62,22 +59,16 @@ struct UserProfileView: View {
         
           // Picker for the dropdown
           Picker("使用日曆", selection: $viewModel.cal_idx) {
-                ForEach(0 ..< viewModel.cal_names.count) {
-                    Text(viewModel.cal_names[$0])
-                }
+              if !viewModel.cal_names.isEmpty {
+                  
+                  ForEach(0 ..< viewModel.cal_names.count , id: \.self ) { (index) in
+                        Text(viewModel.cal_names[index])
+                    }
+              }
             }
             .pickerStyle(MenuPickerStyle()) // Use MenuPickerStyle for a dropdown appearance
 
           
-//          Button(action: viewModel.fetch_calendar_info) {
-//            Text("Query")
-//              .padding(.vertical, 8)
-//              .frame(maxWidth: .infinity)
-//              .background(alignment: .leading) {
-//                Image("Google")
-//                  .frame(width: 30, alignment: .center)
-//              }
-//          }
       }
        
       Section {
@@ -89,24 +80,12 @@ struct UserProfileView: View {
           }
         }
       }
-//      Section {
-//        Button(role: .destructive, action: { presentingConfirmationDialog.toggle() }) {
-//          HStack {
-//            Spacer()
-//            Text("Delete Account")
-//            Spacer()
-//          }
-//        }
-//      }
+
     }
     .navigationTitle("使用者資訊")
     .navigationBarTitleDisplayMode(.inline)
     .analyticsScreen(name: "\(Self.self)")
-//    .confirmationDialog("Deleting your account is permanent. Do you want to delete your account?",
-//                        isPresented: $presentingConfirmationDialog, titleVisibility: .visible) {
-//      Button("Delete Account", role: .destructive, action: deleteAccount)
-//      Button("Cancel", role: .cancel, action: { })
-//    }
+
   }
 }
 
